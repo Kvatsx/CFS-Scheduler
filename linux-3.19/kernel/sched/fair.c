@@ -456,6 +456,8 @@ static inline u64 min_vruntime(u64 min_vruntime, u64 vruntime)
 static inline int entity_before(struct sched_entity *a,
 				struct sched_entity *b)
 {
+	//if ( a->soft_time != b->soft_time )
+	//	return (s64)(a->soft_time - b->soft_time) > 0; 
 	return (s64)(a->vruntime - b->vruntime) < 0;
 }
 
@@ -701,6 +703,19 @@ static void update_curr(struct cfs_rq *cfs_rq)
 		return;
 
 	delta_exec = now - curr->exec_start;
+
+	// Updating Soft_time
+	if ( curr->soft_time > delta_exec )
+	{ 
+		curr->soft_time = curr->soft_time - delta_exec;
+		printk("curr->soft_time = %llu\n", curr->soft_time);
+	}
+	else
+	{
+		curr->soft_time = 0;
+	}	
+	// Done
+
 	if (unlikely((s64)delta_exec <= 0))
 		return;
 
@@ -3248,6 +3263,20 @@ pick_next_entity(struct cfs_rq *cfs_rq, struct sched_entity *curr)
 		se = cfs_rq->next;
 
 	clear_buddies(cfs_rq, se);
+	
+	// Ass2 Changes
+	u64 Value = 0;
+	struct task_struct *task_object;
+	
+	for_each_process(task_object)
+	{
+		if ( task_object->se.on_rq && task_object->se.soft_time > Value )
+		{
+			Value = task_object->se.soft_time;
+			se = &(task_object->se);
+		}
+	}	
+	// Done
 
 	return se;
 }

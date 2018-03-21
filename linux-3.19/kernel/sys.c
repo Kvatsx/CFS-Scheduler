@@ -60,6 +60,9 @@
 #include <asm/uaccess.h>
 #include <asm/io.h>
 #include <asm/unistd.h>
+#include <linux/module.h>
+#include <linux/fcntl.h>
+#include <linux/init.h>
 
 #ifndef SET_UNALIGN_CTL
 # define SET_UNALIGN_CTL(a, b)	(-EINVAL)
@@ -164,6 +167,26 @@ static int set_one_prio(struct task_struct *p, int niceval, int error)
 	set_user_nice(p, niceval);
 out:
 	return error;
+}
+
+SYSCALL_DEFINE2(rtnice, int, pid, u64, time)
+{
+	struct pid *pid_object;
+	struct task_struct *task_object;
+	pid_object = find_get_pid(pid);
+	if ( pid_object == NULL )
+	{
+		printk("Null Pointer Error, Wrong PId\n");
+		return -ESRCH;
+	}
+	
+	task_object = pid_task(pid_object, PIDTYPE_PID);
+	printk("Name: %s\n", task_object->comm);
+	
+	// sched_entity
+	task_object->se.soft_time = time;
+	printk("soft_time: %lld\n", task_object->se.soft_time);
+	return 0; 	
 }
 
 SYSCALL_DEFINE3(setpriority, int, which, int, who, int, niceval)
